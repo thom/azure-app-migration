@@ -87,7 +87,7 @@ def notification():
             #################################################
 
             return redirect('/Notifications')
-        except :
+        except:
             logging.error('log unable to save notification')
 
     else:
@@ -96,7 +96,7 @@ def notification():
 
 
 def send_email(email, subject, body):
-    if not app.config.get('SENDGRID_API_KEY')
+    if not app.config.get('SENDGRID_API_KEY'):
         message = Mail(
             from_email=app.config.get('ADMIN_EMAIL_ADDRESS'),
             to_emails=email,
