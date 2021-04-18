@@ -11,7 +11,7 @@ def main(msg: func.ServiceBusMessage):
 
     notification_id = int(msg.get_body().decode('utf-8'))
     logging.info(
-        'Python ServiceBus queue trigger processed message: %s', notification_id)
+        f"Python ServiceBus queue trigger processed message: {notification_id}")
 
     # Get connection to database
     conn = psycopg2.connect(
@@ -20,11 +20,24 @@ def main(msg: func.ServiceBusMessage):
         user=os.environ["POSTGRES_USER"],
         password=os.environ["POSTGRES_PW"]
     )
+    logging.info(f"Successfully connected to {POSTGRES_DB}@{POSTGRES_URL}")
 
     try:
-        pass
+        # Get notification message and subject from database using the notification_id
+        cur = conn.cursor()
+        cmd = f"SELECT message, subject FROM notification WHERE id={notification_id}"
+        cur.execute(cmd)
+        logging.info(
+            f"Notification ID {notification_id}: Get message and subject")
 
-        # TODO: Get notification message and subject from database using the notification_id
+        for row in cur.fetchall():
+            message = row[0]
+            subject = row[1]
+
+        if not message or not subject:
+            error_message = f"Notification ID {notification_id}: No message or subject"
+            logging.error(error_message)
+            raise Exception(error_message)
 
         # TODO: Get attendees email and name
 
