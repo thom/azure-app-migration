@@ -67,5 +67,5 @@ def main(msg: func.ServiceBusMessage):
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error(error)
     finally:
-        # TODO: Close connection
-        pass
+        # Close connection
+        conn.close()
