@@ -41,10 +41,26 @@ def main(msg: func.ServiceBusMessage):
 
         # Get attendees email and name
         cmd = f"SELECT first_name, last_name, email FROM attendee"
-        cursor.execute(cmd)
+        cur.execute(cmd)
         count = 0
 
-        # TODO: Loop through each attendee and send an email with a personalized subject
+        # Loop through each attendee and send an email with a personalized subject
+        for row in cur.fetchall():
+            first_name = row[0]
+            last_name = row[1]
+            email = row[2]
+
+            message = Mail(
+                from_email=os.environ['FROM_EMAIL_ADDRESS'],
+                to_emails=email,
+                subject=f"Hello, {first_name}! {subject}",
+                plain_text_content=message
+            )
+
+            sg = SendGridAPIClient(os.environ['SENDGRID_API_KEY'])
+            sg.send(message)
+
+            count += 1
 
         # TODO: Update the notification table by setting the completed date and updating the status with the total number of attendees notified
 
