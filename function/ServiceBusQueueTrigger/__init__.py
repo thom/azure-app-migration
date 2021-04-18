@@ -13,7 +13,13 @@ def main(msg: func.ServiceBusMessage):
     logging.info(
         'Python ServiceBus queue trigger processed message: %s', notification_id)
 
-    # TODO: Get connection to database
+    # Get connection to database
+    conn = psycopg2.connect(
+        host=os.environ["POSTGRES_URL"],
+        database=os.environ["POSTGRES_DB"],
+        user=os.environ["POSTGRES_USER"],
+        password=os.environ["POSTGRES_PW"]
+    )
 
     try:
         pass
