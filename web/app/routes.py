@@ -1,11 +1,12 @@
-from app import app, db, queue_client
+from app import app, db#, queue_client
 from datetime import datetime
 from app.models import Attendee, Conference, Notification
 from flask import render_template, session, request, redirect, url_for, flash, make_response, session
-from azure.servicebus import Message
+from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import logging
+
 
 @app.route('/')
 def index():
@@ -30,7 +31,8 @@ def registration():
         try:
             db.session.add(attendee)
             db.session.commit()
-            session['message'] = 'Thank you, {} {}, for registering!'.format(attendee.first_name, attendee.last_name)
+            session['message'] = 'Thank you, {} {}, for registering!'.format(
+                attendee.first_name, attendee.last_name)
             return redirect('/Registration')
         except:
             logging.error('Error occured while saving your information')
@@ -41,7 +43,8 @@ def registration():
             session.pop('message', None)
             return render_template('registration.html', message=message)
         else:
-             return render_template('registration.html')
+            return render_template('registration.html')
+
 
 @app.route('/Attendees')
 def attendees():
@@ -53,6 +56,7 @@ def attendees():
 def notifications():
     notifications = Notification.query.order_by(Notification.id).all()
     return render_template('notifications.html', notifications=notifications)
+
 
 @app.route('/Notification', methods=['POST', 'GET'])
 def notification():
@@ -68,22 +72,33 @@ def notification():
             db.session.commit()
 
             ##################################################
-            ## TODO: Refactor This logic into an Azure Function
-            ## Code below will be replaced by a message queue
+            # Refactor This logic into an Azure Function
+            # Code below will be replaced by a message queue
             #################################################
-            attendees = Attendee.query.all()
+            # attendees = Attendee.query.all()
 
-            for attendee in attendees:
-                subject = '{}: {}'.format(attendee.first_name, notification.subject)
-                send_email(attendee.email, subject, notification.message)
+            # for attendee in attendees:
+            #     subject = '{}: {}'.format(attendee.first_name, notification.subject)
+            #     send_email(attendee.email, subject, notification.message)
 
-            notification.completed_date = datetime.utcnow()
-            notification.status = 'Notified {} attendees'.format(len(attendees))
-            db.session.commit()
-            # TODO Call servicebus queue_client to enqueue notification ID
+            # notification.completed_date = datetime.utcnow()
+            # notification.status = 'Notified {} attendees'.format(len(attendees))
+            # db.session.commit()
+
+            # Call servicebus queue_client to enqueue notification ID
+            notification_id = notification.id
+
+            connstr = app.config.get("SERVICE_BUS_CONNECTION_STRING")
+            queue_name = app.config.get("SERVICE_BUS_QUEUE_NAME")
+
+            with ServiceBusClient.from_connection_string(connstr, logging_enable=True) as client:
+                with client.get_queue_sender(queue_name) as sender:
+                    message = ServiceBusMessage(str(notification_id))
+                    sender.send_messages(message)
+                    logging.error(f"Notification ID {str(notification_id)}: Message '{message}' sent to queue '{queue_name}'")
 
             #################################################
-            ## END of TODO
+            # END
             #################################################
 
             return redirect('/Notifications')
@@ -92,7 +107,6 @@ def notification():
 
     else:
         return render_template('notification.html')
-
 
 
 def send_email(email, subject, body):
