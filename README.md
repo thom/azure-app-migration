@@ -20,8 +20,8 @@
 - [Monthly Cost Analysis](#monthly-cost-analysis)
 - [Architecture Explanation](#architecture-explanation)
 - [Screenshots](#screenshots)
-  - [Migrate Web Applications - 2 Screenshots](#migrate-web-applications---2-screenshots)
-  - [Migrate Database - 2 Screenshots](#migrate-database---2-screenshots)
+  - [Migrate Web Applications](#migrate-web-applications)
+  - [Migrate Database](#migrate-database)
   - [Migrate Background Process - 4 Screenshots](#migrate-background-process---4-screenshots)
 - [Clean-up](#clean-up)
 - [References](#references)
@@ -343,47 +343,71 @@ az webapp up \
 
 ## Monthly Cost Analysis
 
-TBD
-
 Complete a month cost analysis of each Azure resource to give an estimate total cost using the table below:
 
-| Azure Resource            | Service Tier | Monthly Cost |
-| ------------------------- | ------------ | ------------ |
-| _Azure Postgres Database_ |              |              |
-| _Azure Service Bus_       |              |              |
-| ...                       |              |              |
+| Azure Resource              | Service Tier             | Monthly Cost |
+| --------------------------- | ------------------------ | ------------ |
+| _Azure PostgreSQL Database_ | Basic, 1 vCore(s), 50 GB | $39.82       |
+| _Azure Service Bus_         | Basic                    | $0.05        |
+| _Azure App Service_         | Basic (B1), Linux        | $12.41       |
+| _Azure Storage_             | General Purpose V2       | $21.84       |
+| _Azure Function App_        | Consumption              | $1.80        |
+
+All resources are located in East US. See [pricing calculator](https://azure.com/e/66475bd2b32a4e719a22e79d7798ce70) or the [export](./pricing-calculator-estimate.xlsx) for details.
 
 ## Architecture Explanation
 
-TBD
+The previos implementation of the application had the following pain points:
 
-This is a placeholder section where you can provide an explanation and reasoning for your architecture selection for both the Azure Web App and Azure Function.
+1. The web application is not scalable to handle user load at peak
+2. When the admin sends out notifications, it's currently taking a long time because it's looping through all attendees, resulting in some HTTP timeout exceptions
+3. The current architecture is not cost-effective
+
+Through the migration to a microservice architecture and refactoring the notification logic to an Azure Function via a service bus queue message, the different components of the web application are decoupled. This makes it more scalable and sending out of notifications does not lead to HTTP timeout exceptions anymore.
+
+The migration to an Azure App Service and Azure Postgres database instance improves cost-efficiency.
 
 ## Screenshots
 
-TBD
+### Migrate Web Applications
 
-The following screenshots should be taken and uploaded to your screenshots folder:
+Screenshot of Azure Resource showing the App Service Plan:
 
-### Migrate Web Applications - 2 Screenshots
+![App Service Plan](screenshots/app-service-plan.png)
 
-- Screenshot of Azure Resource showing the App Service Plan.
-- Screenshot of the deployed Web App running. The screenshot should be fullscreen showing the URL and application running.
+Screenshot of the deployed Web App running:
 
-### Migrate Database - 2 Screenshots
+![Web App](screenshots/web-app.png)
 
-- Screenshot of the Azure Resource showing the Azure Database for PostgreSQL server.
-- Screenshot of the Web App successfully loading the list of attendees and notifications from the deployed website.
+### Migrate Database
+
+Screenshot of the Azure Resource showing the Azure Database for PostgreSQL server:
+
+![Azure Database for PostgreSQL server](screenshots/postgresql-server.png)
+
+Screenshot of the Web App successfully loading the list of attendees and notifications from the deployed website:
+
+![Web App: Attendees](screenshots/web-app-attendees.png)
+
+![Web App: Notifications](screenshots/web-app-notifications.png)
 
 ### Migrate Background Process - 4 Screenshots
 
-- Screenshot of the Azure Function App running in Azure, showing the function name and the function app plan.
-- Screenshots of the following showing functionality of the deployed site:
-  - Submitting a new notification.
-    - Screenshot of filled out Send Notification form.
-- Notification processed after executing the Azure function.
-  - Screenshot of the Email Notifications List showing the notification status as Notifications submitted.
-  - Screenshot of the Email Notifications List showing the notification status as Notified X attendees.
+Screenshot of the Azure Function App running in Azure, showing the function name and the function app plan:
+
+![Azure Function App](screenshots/azure-function-app.png)
+
+Screenshots of submitting a new notification (filled out Send Notification form):
+
+![Web App: New notification](screenshots/web-app-new-notification.png)
+
+Screenshot of the Email Notifications List showing the notification status as "Notifications submitted":
+
+![Web App: Notification submitted](screenshots/web-app-notification-submitted.png)
+
+Screenshot of the Email Notifications List showing the notification status as "Notified X attendees":
+
+![Web App: Notified](screenshots/web-app-notified.png)
 
 ## Clean-up
 
