@@ -39,7 +39,10 @@ def main(msg: func.ServiceBusMessage):
             logging.error(error_message)
             raise Exception(error_message)
 
-        # TODO: Get attendees email and name
+        # Get attendees email and name
+        cmd = f"SELECT first_name, last_name, email FROM attendee"
+        cursor.execute(cmd)
+        count = 0
 
         # TODO: Loop through each attendee and send an email with a personalized subject
 
