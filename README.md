@@ -11,11 +11,12 @@
     - [Create a Service Bus resource](#create-a-service-bus-resource)
     - [Configuration](#configuration)
     - [Create a storage account](#create-a-storage-account)
+    - [Test web app locally](#test-web-app-locally)
     - [Create App Service plan and deploy the web app](#create-app-service-plan-and-deploy-the-web-app)
   - [Create and Publish Azure Function](#create-and-publish-azure-function)
     - [Create Azure Function](#create-azure-function)
     - [Publish the Azure Function](#publish-the-azure-function)
-  - [Part 3: Refactor `routes.py`](#part-3-refactor-routespy)
+  - [Refactor `routes.py`](#refactor-routespy)
 - [Monthly Cost Analysis](#monthly-cost-analysis)
 - [Architecture Explanation](#architecture-explanation)
 - [Screenshots](#screenshots)
@@ -122,6 +123,17 @@ az postgres server firewall-rule create \
     --end-ip-address <yourip>
 ```
 
+Allow all Azure IP addresses to connect to the database server:
+
+```bash
+az postgres server firewall-rule create \
+    --resource-group techconf-app-rg \
+    --server techconf-app-psql \
+    --name AllowAllAzureIPs \
+    --start-ip-address 0.0.0.0 \
+    --end-ip-address 0.0.0.0
+```
+
 Check [What Is My IP Address](https://whatismyipaddress.com/) to see your IP address.
 
 Create the database tables:
@@ -197,9 +209,26 @@ az storage account create \
     --sku Standard_LRS
 ```
 
+#### Test web app locally
+
+Change into the `web` directory and install the dependencies:
+
+```bash
+pipenv install
+pipenv shell
+```
+
+Run the Flask application:
+
+```bash
+FLASK_APP=application.py flask run
+```
+
+Now you can access the application on your [localhost on port 5000](http://127.0.0.1:5000).
+
 #### Create App Service plan and deploy the web app
 
-Change into the `web` directory and deploy the web app with a new service plan:
+Stay within the `web` directory and deploy the web app with a new service plan:
 
 ```bash
 az webapp up \
@@ -207,6 +236,7 @@ az webapp up \
     --name techconf-app \
     --plan techconf-app-asp \
     --sku F1 \
+    --location eastus \
     --verbose
 ```
 
@@ -294,13 +324,22 @@ func azure functionapp publish techconf-api-v1
 
 Save the function app url [https://techconf-api-v1.azurewebsites.net/api/](https://techconf-api-v1.azurewebsites.net/api/) since you will need to update that in the client-side of the application.
 
-### Part 3: Refactor `routes.py`
+### Refactor `routes.py`
 
-TBD
+`routes.py` has already been refactored:
 
-1. Refactor the post logic in `web/app/routes.py -> notification()` using servicebus `queue_client`:
-   - The notification method on POST should save the notification object and queue the notification id for the function to pick it up
-2. Re-deploy the web app to publish changes
+- Post logic in `web/app/routes.py -> notification()` using servicebus `queue_client`
+- The notification method on POST saves the notification object and queue the notification id for the function to pick it up
+
+There is no need to re-deploy the web app to publish the changes.
+
+In case you made some additional changes, you can use the following command to re-deploy the web app:
+
+```bash
+az webapp up \
+    --name techconf-app \
+    --verbose
+```
 
 ## Monthly Cost Analysis
 
