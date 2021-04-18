@@ -62,7 +62,17 @@ def main(msg: func.ServiceBusMessage):
 
             count += 1
 
-        # TODO: Update the notification table by setting the completed date and updating the status with the total number of attendees notified
+        # Update the notification table by setting the completed date and updating the status with the total number of attendees notified
+        status = f"Notified {str(count)} attendees"
+        date = datetime.now()
+        logging.info(f"Notification ID {notification_id}: {status}@{date}")
+
+        cmd = f"UPDATE notification SET status = {status} WHERE id = {notification_id}"
+        cur.execute(cmd)
+
+        cmd = f"UPDATE notification SET completed_date = {date} WHERE id = {notification_id}"
+        cur.execute(cmd)
+        conn.commit()
 
     except (Exception, psycopg2.DatabaseError) as error:
         logging.error(error)
