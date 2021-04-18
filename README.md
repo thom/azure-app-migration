@@ -12,10 +12,16 @@
     - [Configuration](#configuration)
     - [Create a storage account](#create-a-storage-account)
     - [Create App Service plan and deploy the web app](#create-app-service-plan-and-deploy-the-web-app)
-  - [Part 2: Create and Publish Azure Function](#part-2-create-and-publish-azure-function)
+  - [Create and Publish Azure Function](#create-and-publish-azure-function)
+    - [Create Azure Function](#create-azure-function)
+    - [Publish the Azure Function](#publish-the-azure-function)
   - [Part 3: Refactor `routes.py`](#part-3-refactor-routespy)
 - [Monthly Cost Analysis](#monthly-cost-analysis)
 - [Architecture Explanation](#architecture-explanation)
+- [Screenshots](#screenshots)
+  - [Migrate Web Applications - 2 Screenshots](#migrate-web-applications---2-screenshots)
+  - [Migrate Database - 2 Screenshots](#migrate-database---2-screenshots)
+  - [Migrate Background Process - 4 Screenshots](#migrate-background-process---4-screenshots)
 - [Clean-up](#clean-up)
 - [References](#references)
 - [Requirements](#requirements)
@@ -204,28 +210,101 @@ az webapp up \
     --verbose
 ```
 
-### Part 2: Create and Publish Azure Function
+### Create and Publish Azure Function
 
-1. Create an Azure Function in the `function` folder that is triggered by the service bus queue created in Part 1.
+#### Create Azure Function
 
-   **Note**: Skeleton code has been provided in the **README** file located in the `function` folder. You will need to copy/paste this code into the `__init.py__` file in the `function` folder.
+The `function` directory has already been initialized and the function created. The following commands were used:
 
-   - The Azure Function should do the following:
-     - Process the message which is the `notification_id`
-     - Query the database using `psycopg2` library for the given notification to retrieve the subject and message
-     - Query the database to retrieve a list of attendees (**email** and **first name**)
-     - Loop through each attendee and send a personalized subject message
-     - After the notification, update the notification status with the total number of attendees notified
+```bash
+func init # select Python worker runtime
+func new \
+    --name ServiceBusQueueTrigger \
+    --template "Azure Service Bus Queue trigger"
+```
 
-2. Publish the Azure Function
+The Azure Function does the following:
+
+- Process the message which is the `notification_id`
+- Query the database using `psycopg2` library for the given notification to retrieve the subject and message
+- Query the database to retrieve a list of attendees (**email** and **first name**)
+- Loop through each attendee and send a personalized subject message
+- After the notification, update the notification status with the total number of attendees notified
+
+#### Publish the Azure Function
+
+Create an Azure Function App within the resource group, region and storage account:
+
+```bash
+az functionapp create \
+    --name techconf-api-v1 \
+    --resource-group techconf-app-rg \
+    --storage-account techconfappst \
+    --functions-version 3 \
+    --os-type Linux \
+    --runtime python \
+    --runtime-version 3.8 \
+    --consumption-plan-location eastus
+```
+
+- Note that app names need to be unique across all of Azure
+- Make sure it is a Linux app, with a Python runtime
+
+Add the PostgreSQL and Service Bus connection details as a new application settings in your function app:
+
+- `POSTGRES_URL`
+- `POSTGRES_USER`
+- `POSTGRES_PW`
+- `POSTGRES_DB`
+- `SERVICE_BUS_CONNECTION_STRING`
+- `ADMIN_EMAIL_ADDRESS`
+- `SENDGRIP_API_KEY`
+
+![Application setting](screenshots/application-settings.png)
+
+Test it out locally first. To do so, you have to install the dependencies:
+
+```bash
+cd functions
+pipenv install
+pipenv shell
+```
+
+Fetch app settings:
+
+```bash
+func azure functionapp fetch-app-settings techconf-api-v1
+```
+
+Run functions locally:
+
+```bash
+func start
+```
+
+You may need to change `"IsEncrypted"` to `false` in `local.settings.json` if this fails.
+
+At this point, Azure functions are hosted in [localhost:7071](http://localhost:7071).
+
+If everything works, you can deploy the functions to Azure by publishing your function app:
+
+```bash
+func azure functionapp publish techconf-api-v1
+```
+
+Save the function app url [https://techconf-api-v1.azurewebsites.net/api/](https://techconf-api-v1.azurewebsites.net/api/) since you will need to update that in the client-side of the application.
 
 ### Part 3: Refactor `routes.py`
+
+TBD
 
 1. Refactor the post logic in `web/app/routes.py -> notification()` using servicebus `queue_client`:
    - The notification method on POST should save the notification object and queue the notification id for the function to pick it up
 2. Re-deploy the web app to publish changes
 
 ## Monthly Cost Analysis
+
+TBD
 
 Complete a month cost analysis of each Azure resource to give an estimate total cost using the table below:
 
@@ -237,7 +316,35 @@ Complete a month cost analysis of each Azure resource to give an estimate total 
 
 ## Architecture Explanation
 
+TBD
+
 This is a placeholder section where you can provide an explanation and reasoning for your architecture selection for both the Azure Web App and Azure Function.
+
+## Screenshots
+
+TBD
+
+The following screenshots should be taken and uploaded to your screenshots folder:
+
+### Migrate Web Applications - 2 Screenshots
+
+- Screenshot of Azure Resource showing the App Service Plan.
+- Screenshot of the deployed Web App running. The screenshot should be fullscreen showing the URL and application running.
+
+### Migrate Database - 2 Screenshots
+
+- Screenshot of the Azure Resource showing the Azure Database for PostgreSQL server.
+- Screenshot of the Web App successfully loading the list of attendees and notifications from the deployed website.
+
+### Migrate Background Process - 4 Screenshots
+
+- Screenshot of the Azure Function App running in Azure, showing the function name and the function app plan.
+- Screenshots of the following showing functionality of the deployed site:
+  - Submitting a new notification.
+    - Screenshot of filled out Send Notification form.
+- Notification processed after executing the Azure function.
+  - Screenshot of the Email Notifications List showing the notification status as Notifications submitted.
+  - Screenshot of the Email Notifications List showing the notification status as Notified X attendees.
 
 ## Clean-up
 
@@ -249,9 +356,13 @@ az group delete --name techconf-app-rg
 
 ## References
 
-TBD
-
-- []()
+- [Quickstart: Create an Azure Database for PostgreSQL server by using the Azure CLI](https://docs.microsoft.com/en-us/azure/postgresql/quickstart-create-server-database-azure-cli)
+- [Quickstart: Create, download, and list blobs with Azure CLI](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-cli)
+- [Quickstart: Create a Python app using Azure App Service on Linux](https://docs.microsoft.com/en-us/azure/app-service/quickstart-python?tabs=bash&pivots=python-framework-flask)
+- [Work with Azure Functions Core Tools](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=linux%2Cpython%2Cbash)
+- [Total Cost of Ownership (TCO) Calculator](https://azure.microsoft.com/en-us/pricing/tco/calculator/)
+- [Azure pricing](https://azure.microsoft.com/en-us/pricing/)
+- [Pricing calculator](https://azure.microsoft.com/en-us/pricing/calculator/)
 
 ## Requirements
 
