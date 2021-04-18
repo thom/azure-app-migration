@@ -51,7 +51,7 @@ def main(msg: func.ServiceBusMessage):
             email = row[2]
 
             message = Mail(
-                from_email=os.environ['FROM_EMAIL_ADDRESS'],
+                from_email=os.environ['ADMIN_EMAIL_ADDRESS'],
                 to_emails=email,
                 subject=f"Hello, {first_name}! {subject}",
                 plain_text_content=message
@@ -62,7 +62,8 @@ def main(msg: func.ServiceBusMessage):
 
             count += 1
 
-        # Update the notification table by setting the completed date and updating the status with the total number of attendees notified
+        # Update the notification table by setting the completed date and 
+        # updating the status with the total number of attendees notified
         status = f"Notified {str(count)} attendees"
         date = datetime.now()
         logging.info(f"Notification ID {notification_id}: {status}@{date}")
