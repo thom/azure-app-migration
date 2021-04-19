@@ -1,4 +1,4 @@
-# TechConf Registration Website
+# Udacity Cloud Developer using Microsoft Azure Nanodegree Program - Project: Migrate App to Azure
 
 - [Introduction](#introduction)
 - [Getting Started](#getting-started)
@@ -357,7 +357,7 @@ All resources are located in East US. See [pricing calculator](https://azure.com
 
 ## Architecture Explanation
 
-The previos implementation of the application had the following pain points:
+The previous implementation of the application had the following pain points:
 
 1. The web application is not scalable to handle user load at peak
 2. When the admin sends out notifications, it's currently taking a long time because it's looping through all attendees, resulting in some HTTP timeout exceptions
